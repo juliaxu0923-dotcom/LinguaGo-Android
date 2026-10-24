@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Prepare iPhone website
         run: |
-          unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source.zip -d extracted
+          unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source-V3.3.zip -d extracted
           mkdir -p site
           cp -a extracted/LinguaGo-Mobile-V2/www/. site/
           test -s site/index.html
