@@ -1,8 +1,9 @@
-name: Build LinguaGo APK
+name: Build LinguaGo V3.4 APK and iPhone Pages
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -18,19 +19,69 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v4
-      - name: Extract project
-        run: unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source-V3.3.zip
-      - name: Build APK
+      - name: Prepare V3.4 source
+        run: |
+          unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source-V3.3.zip
+          python3 scripts/upgrade-v34.py LinguaGo-Mobile-V2
+          node --check LinguaGo-Mobile-V2/www/cloud-sync.js
+          node --check LinguaGo-Mobile-V2/www/sw.js
+      - name: Build Android V3.4 APK
         working-directory: LinguaGo-Mobile-V2
         run: |
           npm install --no-audit --no-fund
           npx cap add android
+          sed -i -E 's/versionCode [0-9]+/versionCode 34/; s/versionName "[^"]+"/versionName "3.4.0"/' android/app/build.gradle
           npx capacitor-assets generate --android
           npx cap sync android
           cd android
           bash ./gradlew --no-daemon assembleDebug
+      - name: Name APK and create checksum
+        run: |
+          mkdir -p apk
+          cp LinguaGo-Mobile-V2/android/app/build/outputs/apk/debug/app-debug.apk apk/LinguaGo-v3.4.apk
+          cd apk
+          sha256sum LinguaGo-v3.4.apk > LinguaGo-v3.4.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: LinguaGo-APK
-          path: LinguaGo-Mobile-V2/android/app/build/outputs/apk/debug/app-debug.apk
+          name: LinguaGo-V3.4-APK
+          path: apk/
           if-no-files-found: error
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare iPhone V3.4 website
+        run: |
+          unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source-V3.3.zip
+          python3 scripts/upgrade-v34.py LinguaGo-Mobile-V2
+          mkdir -p site/downloads
+          cp -a LinguaGo-Mobile-V2/www/. site/
+          touch site/.nojekyll
+      - uses: actions/download-artifact@v4
+        with:
+          name: LinguaGo-V3.4-APK
+          path: site/downloads
+      - name: Create direct APK download page
+        run: |
+          cat > site/downloads/index.html <<'HTML'
+          <!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LinguaGo V3.4 下载</title><body style="font:18px/1.8 system-ui;max-width:640px;margin:60px auto;padding:24px"><h1>LinguaGo V3.4</h1><p>登录后显示当前邮箱，退出后恢复登录入口，保留账号密码登录和学习记录云同步。</p><p><a href="./LinguaGo-v3.4.apk" download>下载 Android APK · V3.4</a></p><p><a href="../">打开 iPhone / 网页版</a></p><p><a href="./LinguaGo-v3.4.apk.sha256">APK SHA-256 校验值</a></p></body></html>
+          HTML
+          test -s site/index.html
+          test -s site/downloads/LinguaGo-v3.4.apk
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: deployment
