@@ -1,27 +1,10 @@
-name: Publish LinguaGo iPhone
+name: Publish LinguaGo iPhone and APK
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: github-pages
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare iPhone website
-        run: |
-          unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source-V3.3.zip -d extracted
-          mkdir -p site
-          cp -a extracted/LinguaGo-Mobile-V2/www/. site/
-          test -s site/index.html
-          touch site/.nojekyll
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: site
-      - uses: actions/deploy-pages@v4
+  publish:
+    uses: ./.github/workflows/android-apk.yml
