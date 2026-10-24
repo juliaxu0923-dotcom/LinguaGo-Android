@@ -19,7 +19,7 @@ jobs:
           java-version: '21'
       - uses: android-actions/setup-android@v4
       - name: Extract project
-        run: unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source.zip
+        run: unzip -q LinguaGo-Mobile-V2-Android-iPhone-Source-V3.3.zip
       - name: Build APK
         working-directory: LinguaGo-Mobile-V2
         run: |
