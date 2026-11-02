@@ -58,7 +58,7 @@ html_path.write_text(html, encoding='utf-8')
 sw_path = www / 'sw.js'
 if sw_path.exists():
     sw = sw_path.read_text(encoding='utf-8')
-    sw, count = re.subn(r"const CACHE\s*=\s*['"][^'"]+['"]", "const CACHE='linguago-mobile-v3.5-offline-dialogues'", sw, count=1)
+    sw, count = re.subn(r'const CACHE\s*=\s*["'][^"']+["']', "const CACHE='linguago-mobile-v3.5-offline-dialogues'", sw, count=1)
     if count:
         sw_path.write_text(sw, encoding='utf-8')
 for filename in ('package.json', 'package-lock.json'):
